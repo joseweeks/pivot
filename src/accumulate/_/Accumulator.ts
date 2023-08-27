@@ -1,12 +1,9 @@
-import { Reducer } from "./Reducer";
-import { getReducedResultWithInitialValue } from "./getReducedResultWithInitialValue";
-import { getReducedResultWithoutInitialValue } from "./getReducedResultWithoutInitialValue";
-
-type Expand<T> = T extends (...args: infer A) => infer R
-  ? (...args: Expand<A>) => Expand<R>
-  : T extends infer O
-  ? { [K in keyof O]: O[K] }
-  : never;
+import { Classifier } from "./pivot/Classifier";
+import { PivotResult } from "./pivot/PivotResult";
+import { Reducer } from "./reduce/Reducer";
+import { getPivotFunctions } from "./pivot/getPivotFunctions";
+import { getReduceFunctionsWithInitialValue } from "./reduce/getReduceFunctionsWithInitialValue";
+import { getReduceFunctionsWithoutInitialValue } from "./reduce/getReduceFunctionsWithoutInitialValue";
 
 // We are currently re-casting the generic type parameters of "this" whenever
 // we receive updated type information from calls. This is in place of the
@@ -15,10 +12,10 @@ type Expand<T> = T extends (...args: infer A) => infer R
 //
 // This is done because the other approach does nothing at runtime but has
 // a runtime cost. This approach does nothing at runtime.
-function recastAccumulator<Datum, Throws extends boolean, Result>(
+function recastAccumulator<Datum, Throws extends boolean, Output>(
   orig: Accumulator<any, any, any>
 ) {
-  return orig as Accumulator<Datum, Throws, Result>;
+  return orig as Accumulator<Datum, Throws, Output>;
 }
 
 type AccumulatorResult<Throws extends boolean, Output> = Throws extends true
@@ -29,75 +26,226 @@ type AccumulatorIterator<Throws extends boolean, Output> = Throws extends true
   ? Iterator<Output>
   : never;
 
-export class Accumulator<Input, Throws extends boolean, Output = Input> {
-  private input: Iterable<Input>;
-  private output: Iterable<Output>;
+// TODO flat, unflat, transpose, single
+
+type Appender<Datum> = (datum: Datum) => void;
+type Resolver<Output> = () => Iterable<Output>;
+type Defer<Datum, Output> = (datum: Datum) => {
+  appender: Appender<Datum>;
+  resolver: Resolver<Output>;
+};
+
+export class Accumulator<Datum, Throws extends boolean, Output = Datum> {
+  private appender: Appender<Datum>;
+  private resolver: Resolver<Output>;
+  private defer?: Defer<Datum, Output>;
+
   private throws: boolean;
   private error?: Error;
 
-  public constructor(
-    input: Iterable<Input>,
-    throws: Throws,
-    output?: Iterable<Output>
-  ) {
-    this.input = input;
-    this.throws = throws;
-    this.output = output ?? (input as unknown as Iterable<Output>);
+  private getDefaultAppenderAndResolver(data: Iterable<Datum>) {
+    const appended: Output[] = [];
+    const appender = (datum: Datum) =>
+      appended.push(datum as unknown as Output);
+    const resolver = () => [
+      ...(data as unknown as Iterable<Output>),
+      ...appended,
+    ];
+
+    return { appender, resolver };
   }
 
-  // public classify<ThisClassification = string>(
-  //   classifier: Classifier<Input, ThisClassification>
-  // ) {
-  //   const that = recastAccumulator<Input, ThisClassification, Output>(this);
+  public constructor(data: Iterable<Datum>, throws: Throws) {
+    // this.data = data;
+    this.throws = throws;
+    const { appender, resolver } = this.getDefaultAppenderAndResolver(data);
+    this.appender = appender;
+    this.resolver = resolver;
+  }
 
-  //   that.classifier = classifier;
-  //   return that;
-  // }
+  /**
+   * This method updates the defer, appender, and resolver callbacks, then
+   * pipes the output of the old resolver to the new appender.
+   *
+   * Clears this.defer if it is not specified on this call.
+   */
+  private pipeAndUpdateCallbacks({
+    defer,
+    appender,
+    resolver,
+  }: {
+    defer?: Defer<Datum, Output>;
+    appender?: Appender<Datum>;
+    resolver?: Resolver<Output>;
+  }) {
+    this.defer = defer;
 
-  public reduce<ThisOutput>(
-    reducer: Reducer<Input, ThisOutput>,
-    initialValue: ThisOutput
-  ): Accumulator<Input, Throws, ThisOutput>;
+    const prev = this.resolver() as unknown as Iterable<Datum>;
 
-  public reduce(
-    reducer: Reducer<Input, Input>,
-    initialValue?: undefined
-  ): Accumulator<Input, Throws, Input>;
+    if (appender) this.appender = appender;
+    if (resolver) this.resolver = resolver;
 
-  public reduce<ThisOutput>(
-    reducer: Reducer<Input, ThisOutput>,
-    initialValue?: ThisOutput
-  ) {
-    const that = recastAccumulator<Input, Throws, ThisOutput>(this);
+    this.append(prev);
+  }
 
-    const value =
-      initialValue === undefined
-        ? getReducedResultWithoutInitialValue(
-            // These cast are enforced by the overloads above
-            that.input as unknown as Iterable<ThisOutput>,
-            that.throws,
-            reducer as unknown as Reducer<ThisOutput, ThisOutput>
-          )
-        : getReducedResultWithInitialValue(
-            that.input,
-            that.throws,
-            reducer,
-            initialValue
-          );
+  public pivot<
+    ReduceOutput,
+    Classification,
+    ClassificationName extends string = ""
+  >({
+    classifier,
+    classificationName,
+    reducer,
+    initialValue,
+  }: {
+    classifier: Classifier<Datum, Classification>;
+    classificationName?: ClassificationName;
+    reducer: Reducer<Datum, ReduceOutput>;
+    initialValue: ReduceOutput;
+  }): Accumulator<
+    Datum,
+    Throws,
+    PivotResult<ReduceOutput, Classification, ClassificationName>
+  >;
+  public pivot<
+    ReduceOutput,
+    Classification,
+    ClassificationName extends string = ""
+  >({
+    classifier,
+    classificationName,
+    reducer,
+    initialValue,
+  }: {
+    classifier: Classifier<Datum, Classification>;
+    classificationName?: ClassificationName;
+    reducer: Reducer<Datum, Datum>;
+    initialValue?: undefined;
+  }): Accumulator<
+    Datum,
+    Throws,
+    PivotResult<Datum, Classification, ClassificationName>
+  >;
+  public pivot<
+    ReduceOutput,
+    Classification,
+    ClassificationName extends string = ""
+  >({
+    classifier,
+    classificationName,
+    reducer,
+    initialValue,
+  }: {
+    classifier: Classifier<Datum, Classification>;
+    classificationName?: ClassificationName;
+    reducer: Reducer<Datum, ReduceOutput>;
+    initialValue?: ReduceOutput;
+  }) {
+    type PivotOutput = PivotResult<
+      ReduceOutput,
+      Classification,
+      ClassificationName
+    >;
+    const that = recastAccumulator<Datum, Throws, PivotOutput>(this);
+    if (that.error) return that;
 
-    if (value instanceof Error) that.error = value;
-    else that.output = [value];
+    const makeAccumulator = () => {
+      const accumulator = new Accumulator<Datum, Throws, ReduceOutput>(
+        [],
+        that.throws as Throws
+      );
+
+      if (initialValue) return accumulator.reduce(reducer, initialValue);
+      // This cast is enforced by the overloads of this method
+      return accumulator.reduce(reducer as unknown as Reducer<Datum, Datum>);
+    };
+
+    const onError = (err: Error) => {
+      if (that.throws) throw Error;
+      that.error = err;
+    };
+
+    const { appender, resolver } = getPivotFunctions(
+      classifier,
+      classificationName,
+      makeAccumulator,
+      onError
+    );
+
+    that.pipeAndUpdateCallbacks({ appender, resolver });
 
     return that;
   }
 
+  public reduce<ThisOutput>(
+    reducer: Reducer<Datum, ThisOutput>,
+    initialValue: ThisOutput
+  ): Accumulator<Datum, Throws, ThisOutput>;
+  public reduce(reducer: Reducer<Datum, Datum>, initialValue?: undefined): this;
+  public reduce<ThisOutput>(
+    reducer: Reducer<Datum, ThisOutput>,
+    initialValue?: ThisOutput
+  ) {
+    const that = recastAccumulator<Datum, Throws, ThisOutput>(this);
+    if (that.error) return that;
+
+    const onError = (err: Error) => {
+      if (that.throws) throw Error;
+      that.error = err;
+    };
+
+    const callbacks =
+      initialValue === undefined
+        ? getReduceFunctionsWithoutInitialValue(reducer, onError)
+        : getReduceFunctionsWithInitialValue(reducer, initialValue, onError);
+
+    that.pipeAndUpdateCallbacks(callbacks);
+
+    return that;
+  }
+
+  private appendFirstDatumAndHandleDefer(datum: Datum) {
+    if (this.defer) {
+      const fns = this.defer(datum);
+      this.appender = fns.appender;
+      this.resolver = fns.resolver;
+      this.defer = undefined;
+    } else {
+      this.appender(datum);
+    }
+  }
+
+  public append(data: Iterable<Datum>) {
+    if (this.error) return this;
+
+    const iterator = data[Symbol.iterator]();
+    const first = iterator.next();
+
+    if (first.done) return this;
+
+    this.appendFirstDatumAndHandleDefer(first.value);
+
+    for (let cur = iterator.next(); !cur.done; cur = iterator.next()) {
+      this.appender(cur.value);
+    }
+
+    return this;
+  }
+
   public result(): AccumulatorResult<Throws, Output> {
+    const resolved = this.resolver();
+
     if (!this.throws && this.error)
       return this.error as AccumulatorResult<Throws, Output>;
+    if (this.error)
+      throw new Error(
+        "Error set although errors expected to be thrown. This is a programming error. Original Error: " +
+          this.error.message
+      );
 
     const iterator: Iterable<Output> = {
       [Symbol.iterator]: () => {
-        return this.output[Symbol.iterator]();
+        return resolved[Symbol.iterator]();
       },
     };
 
@@ -107,78 +255,9 @@ export class Accumulator<Input, Throws extends boolean, Output = Input> {
   // This accumulator will only be iterable if Throws extends true.
   // If not, AccumulatorIterator's return type will be never.
   public [Symbol.iterator]() {
-    return this.output[Symbol.iterator]() as AccumulatorIterator<
+    return this.resolver()[Symbol.iterator]() as AccumulatorIterator<
       Throws,
-      Output
+      Datum
     >;
   }
-
-  // private executeReduce2() {
-  //   const resultsAndClassifications = getReducedResult(
-  //     this.input,
-  //     this.reducer,
-  //     this.classifier,
-  //     this.initalValue
-  //   );
-  //   if (resultsAndClassifications instanceof Error) {
-  //     this.error = resultsAndClassifications;
-  //     return;
-  //   }
-
-  //   const { results, classifications } = resultsAndClassifications;
-
-  //   const parsed: {
-  //     key: string;
-  //     result: Output;
-  //     classification?: Classification;
-  //   }[] = [];
-
-  //   for (const [key, val] of results.entries())
-  //     parsed.push({
-  //       key,
-  //       result: val.result,
-  //       classification: classifications.get(key),
-  //     });
-
-  //   return parsed;
-  // }
-
-  // public join<ClassificationName extends string = "">(
-  //   classificationName?: ClassificationName
-  // ) {
-  //   if (this.error) return this.error;
-
-  //   const resultsAndClassifications = getReducedResult(
-  //     this.input,
-  //     this.reducer,
-  //     this.classifier,
-  //     this.initalValue
-  //   );
-  //   if (resultsAndClassifications instanceof Error)
-  //     return resultsAndClassifications;
-
-  //   const { results, classifications } = resultsAndClassifications;
-
-  //   type Joined = Expand<
-  //     (ClassificationName extends ""
-  //       ? unknown
-  //       : { [key in ClassificationName]: string }) &
-  //       (Classification extends string ? unknown : Classification) &
-  //       Output
-  //   >;
-
-  //   const parsed: Joined[] = [];
-
-  //   for (const [key, val] of results.entries()) {
-  //     const r = {
-  //       ...(classificationName ? { [classificationName]: key } : {}),
-  //       ...classifications.get(key),
-  //       ...val.result,
-  //     } as Joined;
-
-  //     parsed.push(r);
-  //   }
-
-  //   return parsed;
-  // }
 }

@@ -2,8 +2,9 @@
   "name": "@joseweeks/pivot",
   "version": "0.0.1",
   "description": "Utilities for accumulating and pivoting data",
-  "main": "index.js",
+  "main": "build/index.js",
   "scripts": {
+    "build": "tsc .",
     "test": "jest",
     "run-examples": "NODE_OPTIONS='--loader ts-node/esm' node ./examples/runExamples"
   },
