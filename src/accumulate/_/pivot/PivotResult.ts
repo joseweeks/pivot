@@ -10,7 +10,8 @@ type Expand<T> = T extends (...args: infer A) => infer R
 export type PivotResult<
   Output,
   Classification,
-  ClassificationName extends string = ""
+  ClassificationName extends string = "",
+  ValueName extends string = ""
 > = Expand<
   (ClassificationName extends ""
     ? unknown
@@ -18,5 +19,5 @@ export type PivotResult<
         [key in ClassificationName]: string;
       }) &
     (Classification extends string ? unknown : Classification) &
-    Output
+    (ValueName extends "" ? Output : { [key in ValueName]: Output })
 >;

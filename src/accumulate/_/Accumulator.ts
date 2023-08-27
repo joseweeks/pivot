@@ -91,73 +91,88 @@ export class Accumulator<Datum, Throws extends boolean, Output = Datum> {
   public pivot<
     ReduceOutput,
     Classification,
-    ClassificationName extends string = ""
+    ClassificationName extends string = "",
+    ValueName extends string = ""
   >({
     classifier,
     classificationName,
+    valueName,
     reducer,
     initialValue,
   }: {
-    classifier: Classifier<Datum, Classification>;
+    classifier: Classifier<Output, Classification>;
     classificationName?: ClassificationName;
-    reducer: Reducer<Datum, ReduceOutput>;
+    valueName?: ValueName;
+    reducer: Reducer<Output, ReduceOutput>;
     initialValue: ReduceOutput;
   }): Accumulator<
-    Datum,
+    Output,
     Throws,
-    PivotResult<ReduceOutput, Classification, ClassificationName>
+    PivotResult<ReduceOutput, Classification, ClassificationName, ValueName>
   >;
   public pivot<
     ReduceOutput,
     Classification,
-    ClassificationName extends string = ""
+    ClassificationName extends string = "",
+    ValueName extends string = ""
   >({
     classifier,
     classificationName,
+    valueName,
     reducer,
     initialValue,
   }: {
-    classifier: Classifier<Datum, Classification>;
+    classifier: Classifier<Output, Classification>;
     classificationName?: ClassificationName;
-    reducer: Reducer<Datum, Datum>;
+    valueName?: ValueName;
+    reducer: Reducer<Output, Output>;
     initialValue?: undefined;
   }): Accumulator<
-    Datum,
+    Output,
     Throws,
-    PivotResult<Datum, Classification, ClassificationName>
+    PivotResult<ReduceOutput, Classification, ClassificationName, ValueName>
   >;
   public pivot<
     ReduceOutput,
     Classification,
-    ClassificationName extends string = ""
+    ClassificationName extends string = "",
+    ValueName extends string = ""
   >({
     classifier,
     classificationName,
+    valueName,
     reducer,
     initialValue,
   }: {
-    classifier: Classifier<Datum, Classification>;
+    classifier: Classifier<Output, Classification>;
     classificationName?: ClassificationName;
-    reducer: Reducer<Datum, ReduceOutput>;
+    valueName?: ValueName;
+    reducer: Reducer<Output, ReduceOutput>;
     initialValue?: ReduceOutput;
   }) {
     type PivotOutput = PivotResult<
       ReduceOutput,
       Classification,
-      ClassificationName
+      ClassificationName,
+      ValueName
     >;
-    const that = recastAccumulator<Datum, Throws, PivotOutput>(this);
+
+    const that = recastAccumulator<Output, Throws, PivotOutput>(this);
     if (that.error) return that;
 
     const makeAccumulator = () => {
-      const accumulator = new Accumulator<Datum, Throws, ReduceOutput>(
+      const accumulator = new Accumulator<Output, Throws>(
         [],
         that.throws as Throws
       );
 
-      if (initialValue) return accumulator.reduce(reducer, initialValue);
+      if (initialValue)
+        return accumulator.reduce<ReduceOutput>(reducer, initialValue);
+
       // This cast is enforced by the overloads of this method
-      return accumulator.reduce(reducer as unknown as Reducer<Datum, Datum>);
+      return accumulator.reduce(
+        reducer as unknown as Reducer<Output, Output>
+      ) as unknown as Accumulator<Output, Throws, ReduceOutput>;
     };
 
     const onError = (err: Error) => {
@@ -168,6 +183,7 @@ export class Accumulator<Datum, Throws extends boolean, Output = Datum> {
     const { appender, resolver } = getPivotFunctions(
       classifier,
       classificationName,
+      valueName,
       makeAccumulator,
       onError
     );
@@ -178,15 +194,18 @@ export class Accumulator<Datum, Throws extends boolean, Output = Datum> {
   }
 
   public reduce<ThisOutput>(
-    reducer: Reducer<Datum, ThisOutput>,
+    reducer: Reducer<Output, ThisOutput>,
     initialValue: ThisOutput
-  ): Accumulator<Datum, Throws, ThisOutput>;
-  public reduce(reducer: Reducer<Datum, Datum>, initialValue?: undefined): this;
+  ): Accumulator<Output, Throws, ThisOutput>;
+  public reduce(
+    reducer: Reducer<Output, Output>,
+    initialValue?: undefined
+  ): Accumulator<Output, Throws, Output>;
   public reduce<ThisOutput>(
-    reducer: Reducer<Datum, ThisOutput>,
+    reducer: Reducer<Output, ThisOutput>,
     initialValue?: ThisOutput
   ) {
-    const that = recastAccumulator<Datum, Throws, ThisOutput>(this);
+    const that = recastAccumulator<Output, Throws, ThisOutput>(this);
     if (that.error) return that;
 
     const onError = (err: Error) => {
