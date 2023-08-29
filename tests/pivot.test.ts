@@ -1,7 +1,6 @@
 import { describe, expect, it } from "@jest/globals";
-import { accumulate } from "../src/accumulate";
-import { PivotResult } from "src/accumulate/_/pivot/PivotResult";
-import { makeExampleData } from "./util/makeExampleData";
+import { accumulate } from "../src";
+import { makeExampleData } from "./util";
 
 describe("Error Handling", () => {
   // We have to be careful here, because the reducer function will only be called when there
@@ -10,7 +9,7 @@ describe("Error Handling", () => {
   it("Returns an error when the reducer returns an error", () => {
     const result = accumulate([1, 2, 3])
       .pivot({
-        classifier: (prev) => "same",
+        classifier: () => "same",
         reducer: () => new Error("No way!"),
       })
       .result();
@@ -20,7 +19,7 @@ describe("Error Handling", () => {
   it("Returns an error when the reducer throws an error", () => {
     const result = accumulate([1, 2, 3])
       .pivot({
-        classifier: (prev) => "same",
+        classifier: () => "same",
         reducer: () => {
           throw new Error("No way!");
         },
@@ -34,7 +33,7 @@ describe("Error Handling", () => {
       accumulate([1, 2, 3], {
         errorHandling: "exception",
       }).pivot({
-        classifier: (prev) => "same",
+        classifier: () => "same",
         reducer: () => new Error("No way!"),
       })
     ).toThrow();
@@ -45,7 +44,7 @@ describe("Error Handling", () => {
       accumulate([1, 2, 3], {
         errorHandling: "exception",
       }).pivot({
-        classifier: (prev) => "same",
+        classifier: () => "same",
         reducer: () => {
           throw new Error("No way!");
         },
@@ -110,7 +109,7 @@ describe("Pivots a small number of values", () => {
       .pivot({
         reducer: (a, b) => a + b,
         valueName: "val",
-        classifier: (a) => "thisIsTheClassification",
+        classifier: () => "thisIsTheClassification",
         classificationName: "thisIsTheKey",
       })
       .result();
@@ -222,34 +221,139 @@ describe("Complex operations", () => {
       })
       .pivot({
         classifier: (cur) => cur.firstName,
-        reducer: (acc, cur) => ({
-          red:
-            cur.maxIndex % 3 === 0 &&
-            cur.red === 16 &&
-            !acc.red.includes(cur.lastName)
-              ? [...acc.red, cur.lastName].sort()
-              : acc.red,
-          green:
-            cur.maxIndex % 3 === 0 &&
-            cur.green === 16 &&
-            !acc.green.includes(cur.lastName)
-              ? [...acc.green, cur.lastName].sort()
-              : acc.green,
-        }),
-        initialValue: {
-          red: [] as string[],
-          green: [] as string[],
+        reducer: (acc, cur) => {
+          acc[cur.lastName] = `${cur.red}:${cur.green}:${cur.blue}`;
+
+          return acc;
         },
+        initialValue: {} as Record<string, string>,
         classificationName: "firstName",
       })
-      .result();
+      .toArray();
+
+    expect(result).not.toBeInstanceOf(Error);
     if (!(result instanceof Error))
-      console.table(
-        [...result].map((r) => ({
-          firstName: r.firstName,
-          red: r.red.join(" "),
-          green: r.green.join(" "),
-        }))
-      );
+      expect(result).toEqual([
+        {
+          firstName: "Maria",
+          Wang: "16:16:16",
+          Li: "16:16:16",
+          Zhang: "15:16:16",
+          Chen: "16:16:16",
+          Liu: "16:16:16",
+          Devi: "16:16:15",
+          Yang: "16:16:16",
+          Huang: "16:15:16",
+          Singh: "16:16:16",
+        },
+        {
+          firstName: "Nushi",
+          Li: "16:16:16",
+          Zhang: "16:16:16",
+          Chen: "16:15:16",
+          Liu: "16:16:16",
+          Devi: "15:16:16",
+          Yang: "16:16:16",
+          Huang: "16:16:16",
+          Singh: "16:16:15",
+          Wang: "16:16:16",
+        },
+        {
+          firstName: "Mohammed",
+          Zhang: "16:16:16",
+          Chen: "16:16:16",
+          Liu: "16:16:15",
+          Devi: "16:16:16",
+          Yang: "16:15:16",
+          Huang: "16:16:16",
+          Singh: "15:16:16",
+          Wang: "16:16:16",
+          Li: "16:16:16",
+        },
+        {
+          firstName: "Jose",
+          Chen: "16:16:16",
+          Liu: "15:16:16",
+          Devi: "16:16:16",
+          Yang: "16:16:16",
+          Huang: "16:16:15",
+          Singh: "16:16:16",
+          Wang: "16:15:16",
+          Li: "16:16:16",
+          Zhang: "15:16:16",
+        },
+        {
+          firstName: "Wei",
+          Liu: "16:16:16",
+          Devi: "16:15:16",
+          Yang: "16:16:16",
+          Huang: "15:16:16",
+          Singh: "16:16:16",
+          Wang: "16:16:16",
+          Li: "16:16:15",
+          Zhang: "16:16:16",
+          Chen: "16:15:16",
+        },
+        {
+          firstName: "Ahmed",
+          Devi: "16:16:16",
+          Yang: "16:16:15",
+          Huang: "16:16:16",
+          Singh: "16:15:16",
+          Wang: "16:16:16",
+          Li: "15:16:16",
+          Zhang: "16:16:16",
+          Chen: "16:16:16",
+          Liu: "16:16:15",
+        },
+        {
+          firstName: "Yan",
+          Yang: "16:16:16",
+          Huang: "16:16:16",
+          Singh: "16:16:16",
+          Wang: "16:16:15",
+          Li: "16:16:16",
+          Zhang: "16:15:16",
+          Chen: "16:16:16",
+          Liu: "15:16:16",
+          Devi: "16:16:16",
+        },
+        {
+          firstName: "Ali",
+          Huang: "16:16:16",
+          Singh: "16:16:16",
+          Wang: "15:16:16",
+          Li: "16:16:16",
+          Zhang: "16:16:16",
+          Chen: "16:16:15",
+          Liu: "16:16:16",
+          Devi: "16:15:16",
+          Yang: "16:16:16",
+        },
+        {
+          firstName: "John",
+          Singh: "16:16:16",
+          Wang: "16:16:16",
+          Li: "16:15:16",
+          Zhang: "16:16:16",
+          Chen: "15:16:16",
+          Liu: "16:16:16",
+          Devi: "16:16:16",
+          Yang: "16:16:15",
+          Huang: "16:16:16",
+        },
+        {
+          firstName: "David",
+          Wang: "16:16:16",
+          Li: "16:16:16",
+          Zhang: "16:16:15",
+          Chen: "16:16:16",
+          Liu: "16:15:16",
+          Devi: "16:16:16",
+          Yang: "15:16:16",
+          Huang: "16:16:16",
+          Singh: "16:16:16",
+        },
+      ]);
   });
 });

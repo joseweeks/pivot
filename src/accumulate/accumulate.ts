@@ -1,4 +1,4 @@
-import { Accumulator } from "./_/Accumulator";
+import { Accumulator } from "./_private";
 
 type ErrorHandling = "error" | "exception";
 type AccumulateOptions = {

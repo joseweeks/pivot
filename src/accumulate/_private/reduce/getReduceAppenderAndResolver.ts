@@ -1,3 +1,4 @@
+import { wrapError } from "../util/wrapError";
 import { Reducer } from "./Reducer";
 
 export function getReduceAppenderAndResolver<Datum, Output>(
@@ -14,9 +15,8 @@ export function getReduceAppenderAndResolver<Datum, Output>(
         return;
       }
       currentValue = value;
-    } catch (err: any) {
-      if (err instanceof Error) onError(err);
-      else onError(new Error(err));
+    } catch (err) {
+      onError(wrapError(err));
       return;
     }
   };

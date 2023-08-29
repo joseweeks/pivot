@@ -1,4 +1,5 @@
 import { Classifier } from "./Classifier";
+import { wrapError } from "../util/wrapError";
 
 export function getClassifierResult<Datum, Classification>(
   datum: Datum,
@@ -6,8 +7,7 @@ export function getClassifierResult<Datum, Classification>(
 ) {
   try {
     return classifier(datum);
-  } catch (err: any) {
-    if (err instanceof Error) return err;
-    return new Error(err);
+  } catch (err) {
+    return wrapError(err);
   }
 }

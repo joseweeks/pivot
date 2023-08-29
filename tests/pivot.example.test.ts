@@ -1,9 +1,9 @@
 import { describe, expect, it } from "@jest/globals";
-import { accumulate } from "../src/accumulate";
-import { makeExampleData } from "./util/makeExampleData";
+import { makeExampleData } from "./util";
+import { accumulate } from "../src";
 
 describe("A simple pivot example", () => {
-  it("stuff", () => {
+  it("Performs a simple classification with counting", () => {
     const data = makeExampleData(1000);
     const result = accumulate(data)
       .pivot({
@@ -37,6 +37,40 @@ describe("A simple pivot example", () => {
       { firstName: "Ali", lastName: "Huang", count: 12, countOfRed: 2 },
       { firstName: "John", lastName: "Singh", count: 12, countOfRed: 2 },
       { firstName: "David", lastName: "Wang", count: 12, countOfRed: 2 },
+    ]);
+  });
+
+  it("Pivots with columns based on input data", () => {
+    const data = makeExampleData(1000);
+    const result = accumulate(data)
+      .pivot({
+        reducer: (acc, datum) => {
+          if (datum.mod[4] !== 0) return acc;
+
+          if (datum.firstName in acc) ++acc[datum.firstName];
+          else acc[datum.firstName] = 1;
+
+          return acc;
+        },
+        initialValue: {} as Record<string, number>,
+        classifier: (d) => d.lastName,
+        classificationName: "lastName",
+      })
+      .toArray();
+
+    expect(result).not.toBeInstanceOf(Error);
+    if (result instanceof Error) return;
+
+    expect(result).toEqual([
+      { lastName: "Wang", Maria: 6, Yan: 6, Mohammed: 6, John: 5, Wei: 5 },
+      { lastName: "Li", John: 6, Wei: 6, Maria: 5, Yan: 5, Mohammed: 5 },
+      { lastName: "Zhang", Maria: 6, Yan: 6, Mohammed: 6, John: 5, Wei: 5 },
+      { lastName: "Chen", Mohammed: 6, John: 6, Wei: 6, Maria: 5, Yan: 5 },
+      { lastName: "Liu", Wei: 6, Maria: 6, Yan: 6, Mohammed: 5, John: 5 },
+      { lastName: "Devi", Mohammed: 6, John: 6, Wei: 5, Maria: 5, Yan: 5 },
+      { lastName: "Yang", Wei: 6, Maria: 6, Yan: 6, Mohammed: 5, John: 5 },
+      { lastName: "Huang", Yan: 6, Mohammed: 6, John: 6, Wei: 5, Maria: 5 },
+      { lastName: "Singh", John: 6, Wei: 6, Maria: 6, Yan: 5, Mohammed: 5 },
     ]);
   });
 });

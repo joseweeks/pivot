@@ -1,0 +1,5 @@
+{
+  "directory": ["./src/", "./tests/"],
+  "location": "all",
+  "exclude": ["/_[^/]*$", "/_[^/]*/index.ts$"]
+}

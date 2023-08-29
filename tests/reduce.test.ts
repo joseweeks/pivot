@@ -1,15 +1,15 @@
 import { describe, expect, it } from "@jest/globals";
-import { accumulate } from "../src/accumulate";
-import { makeExampleData } from "./util/makeExampleData";
+import { accumulate } from "../src";
+import { makeExampleData } from "./util";
 
 describe("Error Handling", () => {
   it("Correctly detects iterator and non-iterator types based on error handling.", () => {
     const errorAccumulator = accumulate([] as number[]);
     const result = errorAccumulator.result();
 
-    // @ts-expect-error
+    // @ts-expect-error Verify that if result could be an error, it will not be iterable
     [...errorAccumulator];
-    // @ts-expect-error
+    // @ts-expect-error Verify that if result could be an error, it will not be iterable
     [...result];
 
     if (!(result instanceof Error)) [...result];
