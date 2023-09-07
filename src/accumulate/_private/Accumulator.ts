@@ -15,6 +15,8 @@ export interface Accumulator<
   Async extends boolean,
   Output = Datum
 > {
+  enableExceptions(): Accumulator<Datum, true, Async, Output>;
+
   /**
    * This is a TRANSFORM method, forming a discrete step in the accumulator pipeline. Transforms
    * any existing data in the pipeline, as well as any further data added by append(), until

@@ -30,25 +30,25 @@ describe("Error Handling", () => {
 
   it("Throws an error when the reducer returns an error", () => {
     expect(() =>
-      accumulate([1, 2, 3], {
-        errorHandling: "exception",
-      }).pivot({
-        classifier: () => "same",
-        reducer: () => new Error("No way!"),
-      })
+      accumulate([1, 2, 3])
+        .enableExceptions()
+        .pivot({
+          classifier: () => "same",
+          reducer: () => new Error("No way!"),
+        })
     ).toThrow();
   });
 
   it("Throws an error when the reducer throws an error", () => {
     expect(() =>
-      accumulate([1, 2, 3], {
-        errorHandling: "exception",
-      }).pivot({
-        classifier: () => "same",
-        reducer: () => {
-          throw new Error("No way!");
-        },
-      })
+      accumulate([1, 2, 3])
+        .enableExceptions()
+        .pivot({
+          classifier: () => "same",
+          reducer: () => {
+            throw new Error("No way!");
+          },
+        })
     ).toThrow();
   });
 
@@ -78,27 +78,27 @@ describe("Error Handling", () => {
 
   it("Throws an error when the classifier returns an error", () => {
     expect(() =>
-      accumulate([1, 2, 3], {
-        errorHandling: "exception",
-      }).pivot({
-        classifier: () => new Error("No way!"),
-        reducer: () => new Error("No way!"),
-      })
+      accumulate([1, 2, 3])
+        .enableExceptions()
+        .pivot({
+          classifier: () => new Error("No way!"),
+          reducer: () => new Error("No way!"),
+        })
     ).toThrow();
   });
 
   it("Throws an error when the classifier throws an error", () => {
     expect(() =>
-      accumulate([1, 2, 3], {
-        errorHandling: "exception",
-      }).pivot({
-        classifier: () => {
-          throw new Error("No way!");
-        },
-        reducer: () => {
-          throw new Error("No way!");
-        },
-      })
+      accumulate([1, 2, 3])
+        .enableExceptions()
+        .pivot({
+          classifier: () => {
+            throw new Error("No way!");
+          },
+          reducer: () => {
+            throw new Error("No way!");
+          },
+        })
     ).toThrow();
   });
 });
@@ -208,9 +208,9 @@ describe("Complex operations", () => {
         initialValue,
         reducer: (acc, cur) => {
           ++acc.count;
-          if (cur.color === "red") acc.red++;
-          if (cur.color === "green") acc.green++;
-          if (cur.color === "blue") acc.blue++;
+          if (cur.color === "red") ++acc.red;
+          if (cur.color === "green") ++acc.green;
+          if (cur.color === "blue") ++acc.blue;
           if (isNaN(acc.minIndex)) acc.minIndex = cur.index;
           else acc.minIndex = Math.min(acc.minIndex, cur.index);
           if (isNaN(acc.maxIndex)) acc.maxIndex = cur.index;

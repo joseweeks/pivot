@@ -26,7 +26,7 @@ function recastAccumulator<
   Datum,
   Throws extends boolean,
   Async extends true,
-  Output
+  Output = Datum
 >(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   orig: AsyncAccumulator<any, any, any, any>
@@ -76,10 +76,10 @@ export class AsyncAccumulator<
 
   private getDefaultAppenderAndResolver(data: Iterable<Datum>) {
     const appended: Output[] = [];
-    const appender = async (datum: Datum) => {
+    const appender = (datum: Datum) => {
       appended.push(datum as unknown as Output);
     };
-    const resolver = async () => [
+    const resolver = () => [
       ...(data as unknown as Iterable<Output>),
       ...appended,
     ];
@@ -94,21 +94,27 @@ export class AsyncAccumulator<
    *
    * It is acceptable for "data" to be an empty Iterable.
    *
-   * If "throws" is true, the methods of this accumulator will
-   * throw when an error is generated. If throws is false, the accumulator is guaranteed not
+   * If enableExceptions() has been called, the methods of this accumulator will
+   * throw when an error is generated. If not, the accumulator is guaranteed not
    * to throw (even if the callbacks passed in do throw). Instead, the accumulator will
    * return an Error object representing the error. This error object will be returned only
    * on a call to one of the results-bearing methods such as result() and toArray().
    *
-   * A note on Error handling. If "throws" is false, the accumulator can not be treated
-   * as an iterable value. The result() method's return value can be checked to see if it
-   * is an error. If it is not an error, then it can be treated as iterable.
+   * A note on Error handling. If exceptions have not been enabled, the accumulator itself
+   * can not be treated as an iterable value. The result() method's return value
+   * can be checked to see if it is an error. If it is not an error, then that result is
+   * iterable.
    */
   public constructor(data: Iterable<Datum>, throws: Throws) {
     this.throws = throws;
     const { appender, resolver } = this.getDefaultAppenderAndResolver(data);
     this.appender = appender;
     this.resolver = resolver;
+  }
+
+  public enableExceptions(): Accumulator<Datum, true, Async, Output> {
+    this.throws = true;
+    return recastAccumulator<Datum, true, Async, Output>(this);
   }
 
   /**
@@ -122,14 +128,13 @@ export class AsyncAccumulator<
 
     this.processingActions = true;
 
-    (async () => {
+    void (async () => {
       while (this.actions.length > 0) {
         const fn = this.actions.shift();
         if (fn) await fn();
       }
+      this.processingActions = false;
     })();
-
-    this.processingActions = false;
   }
 
   /**
@@ -399,7 +404,7 @@ export class AsyncAccumulator<
       this.resolver = fns.resolver;
       this.defer = undefined;
     } else {
-      this.appender(datum);
+      await this.appender(datum);
     }
   }
 

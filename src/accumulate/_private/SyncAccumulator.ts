@@ -49,7 +49,7 @@ export class SyncAccumulator<
   Datum,
   Throws extends boolean,
   Async extends false,
-  Output
+  Output = Datum
 > implements Accumulator<Datum, Throws, Async, Output>
 {
   /** Append datum to current working list */
@@ -89,21 +89,29 @@ export class SyncAccumulator<
    *
    * It is acceptable for "data" to be an empty Iterable.
    *
-   * If "throws" is true, the methods of this accumulator will
-   * throw when an error is generated. If throws is false, the accumulator is guaranteed not
+   * If enableExceptions() has been called, the methods of this accumulator will
+   * throw when an error is generated. If not, the accumulator is guaranteed not
    * to throw (even if the callbacks passed in do throw). Instead, the accumulator will
    * return an Error object representing the error. This error object will be returned only
    * on a call to one of the results-bearing methods such as result() and toArray().
    *
-   * A note on Error handling. If "throws" is false, the accumulator can not be treated
-   * as an iterable value. The result() method's return value can be checked to see if it
-   * is an error. If it is not an error, then it can be treated as iterable.
+   * A note on Error handling. If exceptions have not been enabled, the accumulator itself
+   * can not be treated as an iterable value. The result() method's return value
+   * can be checked to see if it is an error. If it is not an error, then that result is
+   * iterable.
    */
   public constructor(data: Iterable<Datum>, throws: Throws) {
     this.throws = throws;
     const { appender, resolver } = this.getDefaultAppenderAndResolver(data);
     this.appender = appender;
     this.resolver = resolver;
+  }
+
+  public enableExceptions() {
+    this.throws = true;
+    if (this.error) throw this.error;
+
+    return recastAccumulator<Datum, true, Async, Output>(this);
   }
 
   /**
@@ -385,11 +393,11 @@ export class SyncAccumulator<
   /**
    * This is a RESULT method and forms the end of the accumulator pipeline.
    *
-   * If the "throws" parameter of the accumulator was specifed as true, this
+   * If enableExceptions() has been called, this
    * method will return an Iterator representing the result of the final step in the
    * accumulator pipeline.
    *
-   * If the "throws" parameter was false, this method does not meet the requirements of
+   * If exceptions have not been enabled, this method does not meet the requirements of
    * the Iterable interface and can't be treated as iterable.
    */
   [Symbol.iterator](): AccumulatorIterator<Throws, Async, Datum>;
