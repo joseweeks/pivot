@@ -1,10 +1,10 @@
 import { Accumulator } from "../Accumulator";
 import { PivotResult } from "../types/PivotResult";
 
-export function getResolver<
+export async function getResolverAsync<
   Datum,
   Throws extends boolean,
-  Async extends false,
+  Async extends true,
   ReduceOutput,
   Classification,
   ClassificationName extends string,
@@ -19,7 +19,7 @@ export function getResolver<
   const results = [];
 
   for (const [key, acc] of accumulators) {
-    const result = acc.result();
+    const result = await acc.result();
     if (result instanceof Error) {
       onError(result);
       return [];

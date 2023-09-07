@@ -1,12 +1,12 @@
 import { Accumulator } from "../Accumulator";
 import { Classifier } from "../types/Classifier";
-import { getClassifierResult } from "./getClassifierResult";
+import { getClassifierResultAsync } from "./getClassifierResultAsync";
 import { storeClassifierResultAndAppend } from "./storeClassifierResultAndAppend";
 
-export function append<
+export async function appendAsync<
   Datum,
   Throws extends boolean,
-  Async extends false,
+  Async extends true,
   ReduceOutput,
   Classification
 >(
@@ -17,7 +17,7 @@ export function append<
   makeAccumulator: () => Accumulator<Datum, Throws, Async, ReduceOutput>,
   onError: (error: Error) => void
 ) {
-  const classifierResult = getClassifierResult(datum, classifier);
+  const classifierResult = await getClassifierResultAsync(datum, classifier);
   if (classifierResult instanceof Error) {
     onError(classifierResult);
     return;

@@ -1,15 +1,19 @@
 import { wrapError } from "../util/wrapError";
-import { Reducer } from "./Reducer";
+import { Reducer } from "../types/Reducer";
 
-export function getReduceAppenderAndResolver<Datum, Output>(
-  reducer: Reducer<Datum, Output>,
+export function getAsyncReduceAppenderAndResolver<
+  Datum,
+  Output,
+  Async extends true
+>(
+  reducer: Reducer<Datum, Output, Async>,
   currentValue: Output,
   currentIndex: number,
   onError: (error: Error) => void
 ) {
-  const appender = (datum: Datum) => {
+  const appender = async (datum: Datum) => {
     try {
-      const value = reducer(currentValue, datum, currentIndex++);
+      const value = await reducer(currentValue, datum, currentIndex++);
       if (value instanceof Error) {
         onError(value);
         return;

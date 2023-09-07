@@ -3,10 +3,9 @@
  */
 
 export * from "./Accumulator";
-export * from "./Filterer";
-export * from "./Mapper";
-export * from "./Sorter";
-export * from "./getResultsAndClassifications";
+export * from "./AsyncAccumulator";
+export * from "./SyncAccumulator";
 export * from "./pivot/index";
 export * from "./reduce/index";
+export * from "./types/index";
 export * from "./util/index";

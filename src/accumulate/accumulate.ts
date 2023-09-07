@@ -1,4 +1,4 @@
-import { Accumulator } from "./_private";
+import { SyncAccumulator } from "./_private";
 
 type ErrorHandling = "error" | "exception";
 type AccumulateOptions = {
@@ -15,15 +15,15 @@ type AccumulateOptions = {
 export function accumulate<Datum, Throws extends true>(
   data: Iterable<Datum>,
   options: AccumulateOptions & { errorHandling: "exception" }
-): Accumulator<Datum, Throws>;
+): SyncAccumulator<Datum, Throws, false, Datum>;
 export function accumulate<Datum, Throws extends false>(
   data: Iterable<Datum>,
   options: AccumulateOptions & { errorHandling: "error" }
-): Accumulator<Datum, Throws>;
+): SyncAccumulator<Datum, Throws, false, Datum>;
 export function accumulate<Datum, Throws extends false>(
   data: Iterable<Datum>,
   options?: undefined
-): Accumulator<Datum, Throws>;
+): SyncAccumulator<Datum, Throws, false, Datum>;
 
 export function accumulate<Datum, Throws extends boolean>(
   data: Iterable<Datum>,
@@ -32,5 +32,8 @@ export function accumulate<Datum, Throws extends boolean>(
   const { errorHandling } = options;
   const throws = errorHandling === "exception";
 
-  return new Accumulator<Datum, Throws>(data, throws as Throws);
+  return new SyncAccumulator<Datum, Throws, false, Datum>(
+    data,
+    throws as Throws
+  );
 }
