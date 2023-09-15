@@ -14,14 +14,15 @@ import {
   Reducer,
   Sorter,
 } from "./types";
+import { sleep } from "./util";
 
 // We are currently re-casting the generic type parameters of "this" whenever
 // we receive updated type information from calls. This is in place of the
 // alternative, which is to create a new Accumulator with a copy of the old
 // ones data.
 //
-// This is done because the other approach does nothing at runtime but has
-// a runtime cost. This approach does nothing at runtime.
+// This is done because the other approach does nothing useful at runtime but has
+// a runtime cost. This approach does nothing at all at runtime.
 function recastAccumulator<
   Datum,
   Throws extends boolean,
@@ -46,13 +47,17 @@ type Defer<Datum, Output> = (datum: Datum) =>
       resolver: Resolver<Output>;
     }>;
 
+const nop = () => {};
+
 export class AsyncAccumulator<
   Datum,
   Throws extends boolean,
   Async extends true,
-  Output
+  Output = Datum
 > implements Accumulator<Datum, Throws, Async, Output>
 {
+  private idx = 0;
+
   /** Append datum to current working list */
   private appender: Appender<Datum>;
 
@@ -126,15 +131,38 @@ export class AsyncAccumulator<
     this.actions.push(action);
     if (this.processingActions) return;
 
+    void this.executeActions();
+  }
+
+  private async executeActionsBlocking() {
+    let timeout = 4;
+
+    while (this.processingActions) {
+      await sleep(timeout);
+      timeout *= 2;
+    }
+
     this.processingActions = true;
 
-    void (async () => {
-      while (this.actions.length > 0) {
-        const fn = this.actions.shift();
-        if (fn) await fn();
-      }
-      this.processingActions = false;
-    })();
+    while (this.actions.length > 0) {
+      const fn = this.actions.shift();
+      if (fn) await fn();
+    }
+
+    this.processingActions = false;
+  }
+
+  private async executeActions() {
+    if (this.processingActions) return;
+
+    this.processingActions = true;
+
+    while (this.actions.length > 0) {
+      const fn = this.actions.shift();
+      if (fn) await fn();
+    }
+
+    this.processingActions = false;
   }
 
   /**
@@ -296,9 +324,7 @@ export class AsyncAccumulator<
     that.enqueueAction(() => {
       const onError = (err: Error) => {
         that.error = err;
-        that.appender = () => {
-          return;
-        };
+        that.appender = nop;
       };
 
       const callbacks =
@@ -427,36 +453,30 @@ export class AsyncAccumulator<
     return this;
   }
 
-  public result(): AccumulatorResult<Throws, Async, Output> {
-    const promise = (this.resolver() as Promise<Iterable<Output>>).then(
-      (resolved) => {
-        if (!this.throws && this.error)
-          return this.error as AccumulatorResult<Throws, Async, Output>;
-        if (this.error) throw this.error;
-
-        const iterator: Iterable<Output> = {
-          [Symbol.iterator]: () => {
-            return resolved[Symbol.iterator]();
-          },
-        };
-
-        return iterator as AccumulatorResult<Throws, Async, Output>;
-      }
-    );
-
-    return promise as AccumulatorResult<Throws, Async, Output>;
-  }
-
-  public toArray(): ArrayResult<Throws, Async, Output> {
+  private async asyncResult() {
+    await this.executeActionsBlocking();
+    const result = await this.resolver();
     if (!this.throws && this.error)
-      return this.error as ArrayResult<Throws, Async, Output>;
+      return this.error as AccumulatorResult<Throws, Async, Output>;
     if (this.error) throw this.error;
 
-    const promise = (this.resolver() as Promise<Iterable<Output>>).then(
-      (resolved) => {
-        return [...resolved];
-      }
-    );
-    return promise as ArrayResult<Throws, Async, Output>;
+    return result;
+  }
+
+  private async asyncToArray() {
+    const result = await this.asyncResult();
+    if (result instanceof Error) return result;
+
+    // no-unsafe-any disagrees that this is redundant
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+    return [...(result as Iterable<Output>)];
+  }
+
+  public result() {
+    return this.asyncResult() as AccumulatorResult<Throws, Async, Output>;
+  }
+
+  public toArray() {
+    return this.asyncToArray() as ArrayResult<Throws, Async, Output>;
   }
 }

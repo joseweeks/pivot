@@ -5,4 +5,5 @@
 export * from "./pivot.example.test";
 export * from "./pivot.test";
 export * from "./reduce.test";
+export * from "./reduceAsync.test";
 export * from "./util/index";

@@ -21,8 +21,8 @@ import {
 // alternative, which is to create a new Accumulator with a copy of the old
 // ones data.
 //
-// This is done because the other approach does nothing at runtime but has
-// a runtime cost. This approach does nothing at runtime.
+// This is done because the other approach does nothing useful at runtime but has
+// a runtime cost. This approach does nothing at all at runtime.
 function recastAccumulator<
   Datum,
   Throws extends boolean,

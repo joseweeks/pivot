@@ -3,3 +3,4 @@
  */
 
 export * from "./accumulate";
+export * from "./accumulateAsync";
