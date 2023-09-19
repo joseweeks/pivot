@@ -1,6 +1,17 @@
 import { describe, expect, it } from "@jest/globals";
 import { accumulateAsync } from "../src";
 import { makeExampleData } from "./util";
+import { sleep } from "../src/accumulate/_private";
+
+async function sleepAndReturn<T>(val: T) {
+  await sleep(10);
+  return val;
+}
+
+async function sleepAndThrow(errString: string): Promise<Error> {
+  await sleep(10);
+  throw new Error(errString);
+}
 
 describe("Error Handling", () => {
   it("Returns an error when reducing an empty array with no initialValue", async () => {
@@ -11,7 +22,7 @@ describe("Error Handling", () => {
     expect(result).toBeInstanceOf(Error);
 
     const result2 = await accumulateAsync([] as number[])
-      .reduce((prev, cur) => Promise.resolve(prev + cur))
+      .reduce((prev, cur) => sleepAndReturn(prev + cur))
       .result();
 
     expect(result2).toBeInstanceOf(Error);
@@ -28,7 +39,7 @@ describe("Error Handling", () => {
 
     const accumulator2 = accumulateAsync([] as number[])
       .enableExceptions()
-      .reduce((prev, cur) => Promise.resolve(prev + cur));
+      .reduce((prev, cur) => sleepAndReturn(prev + cur));
 
     await expect(async () => {
       await accumulator2.result();
@@ -42,7 +53,7 @@ describe("Error Handling", () => {
     expect(result).toBeInstanceOf(Error);
 
     const result2 = await accumulateAsync([1, 2, 3])
-      .reduce(() => Promise.resolve(new Error("No way!")))
+      .reduce(() => sleepAndReturn(new Error("No way!")))
       .result();
     expect(result2).toBeInstanceOf(Error);
   });
@@ -56,10 +67,7 @@ describe("Error Handling", () => {
     expect(result).toBeInstanceOf(Error);
 
     const result2 = await accumulateAsync([1, 2, 3])
-      // eslint-disable-next-line @typescript-eslint/require-await
-      .reduce(async () => {
-        throw new Error("No way!");
-      })
+      .reduce(() => sleepAndThrow("No way!"))
       .result();
     expect(result2).toBeInstanceOf(Error);
   });
@@ -75,7 +83,7 @@ describe("Error Handling", () => {
     await expect(() =>
       accumulateAsync([1, 2, 3])
         .enableExceptions()
-        .reduce(() => Promise.resolve(new Error("No way!")))
+        .reduce(() => sleepAndReturn(new Error("No way!")))
         .result()
     ).rejects.toThrowError();
   });
@@ -93,10 +101,7 @@ describe("Error Handling", () => {
     await expect(() =>
       accumulateAsync([1, 2, 3])
         .enableExceptions()
-        // eslint-disable-next-line @typescript-eslint/require-await
-        .reduce(async () => {
-          throw new Error("No way!");
-        })
+        .reduce(() => sleepAndThrow("No way!"))
         .result()
     ).rejects.toThrowError();
   });
@@ -279,7 +284,7 @@ describe("Reduces larger lists", () => {
     expect(
       await accumulateAsync([] as number[])
         .enableExceptions()
-        .reduce((acc, cur) => Promise.resolve(acc + cur))
+        .reduce((acc, cur) => sleepAndReturn(acc + cur))
         .append([1, 2, 3, 4, 5])
         .toArray()
     ).toEqual([15]);

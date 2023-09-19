@@ -9,6 +9,7 @@
     "tsconfigRootDir": "."
   },
   "plugins": ["@typescript-eslint"],
+  "ignorePatterns": ["node_modules", "build"],
   "rules": {
     "no-restricted-imports": [
       "error",

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "@jest/globals";
 import { accumulateAsync } from "../src";
 import { makeExampleData } from "./util";
+import { sleep } from "../src/accumulate/_private";
 
 describe("Error Handling", () => {
   // We have to be careful here, because the reducer function will only be called when there
@@ -210,7 +211,8 @@ describe("Complex operations", () => {
       .pivot({
         classifier,
         initialValue,
-        reducer: (acc, cur) => {
+        reducer: async (acc, cur, idx) => {
+          if (idx % 100 === 0) await sleep(20);
           ++acc.count;
           if (cur.color === "red") ++acc.red;
           if (cur.color === "green") ++acc.green;
@@ -225,7 +227,8 @@ describe("Complex operations", () => {
       })
       .pivot({
         classifier: (cur) => cur.firstName,
-        reducer: (acc, cur) => {
+        reducer: async (acc, cur) => {
+          await sleep(10);
           acc[cur.lastName] = `${cur.red}:${cur.green}:${cur.blue}`;
 
           return acc;
