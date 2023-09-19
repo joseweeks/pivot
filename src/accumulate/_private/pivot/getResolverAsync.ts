@@ -34,5 +34,6 @@ export async function getResolverAsync<
       ...(valueName ? { [valueName]: resultValue } : resultValue),
     } as PivotResult<ReduceOutput, Classification, ClassificationName, ValueName>);
   }
+
   return results;
 }

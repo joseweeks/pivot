@@ -56,8 +56,6 @@ export class AsyncAccumulator<
   Output = Datum
 > implements Accumulator<Datum, Throws, Async, Output>
 {
-  private idx = 0;
-
   /** Append datum to current working list */
   private appender: Appender<Datum>;
 
@@ -171,7 +169,7 @@ export class AsyncAccumulator<
    *
    * Clears this.defer if it is not specified on this call.
    */
-  private pipeAndUpdateCallbacks({
+  private async pipeAndUpdateCallbacks({
     defer,
     appender,
     resolver,
@@ -182,12 +180,12 @@ export class AsyncAccumulator<
   }) {
     this.defer = defer;
 
-    const prev = this.resolver() as unknown as Iterable<Datum>;
+    const prev = (await this.resolver()) as unknown as Iterable<Datum>;
 
     if (appender) this.appender = appender;
     if (resolver) this.resolver = resolver;
 
-    this.append(prev);
+    await this.appendAsync(prev);
   }
 
   public pivot<
@@ -263,7 +261,7 @@ export class AsyncAccumulator<
     const that = recastAccumulator<Output, Throws, Async, PivotOutput>(this);
     if (that.error) return that;
 
-    that.enqueueAction(() => {
+    that.enqueueAction(async () => {
       const makeAccumulator = () => {
         const accumulator = new AsyncAccumulator<Output, Throws, Async, Output>(
           [],
@@ -300,7 +298,7 @@ export class AsyncAccumulator<
         onError
       );
 
-      that.pipeAndUpdateCallbacks({ appender, resolver });
+      await that.pipeAndUpdateCallbacks({ appender, resolver });
     });
 
     return that;
@@ -321,7 +319,7 @@ export class AsyncAccumulator<
     const that = recastAccumulator<Output, Throws, Async, ThisOutput>(this);
     if (that.error) return that;
 
-    that.enqueueAction(() => {
+    that.enqueueAction(async () => {
       const onError = (err: Error) => {
         that.error = err;
         that.appender = nop;
@@ -335,7 +333,7 @@ export class AsyncAccumulator<
               initialValue,
               onError
             );
-      that.pipeAndUpdateCallbacks(callbacks);
+      await that.pipeAndUpdateCallbacks(callbacks);
     });
 
     return that;
@@ -345,7 +343,7 @@ export class AsyncAccumulator<
     const that = recastAccumulator<Output, Throws, Async, ThisOutput>(this);
     if (that.error) return that;
 
-    that.enqueueAction(() => {
+    that.enqueueAction(async () => {
       const data: ThisOutput[] = [];
       let currentIndex = 0;
 
@@ -355,7 +353,7 @@ export class AsyncAccumulator<
       };
       const resolver = () => data;
 
-      that.pipeAndUpdateCallbacks({ appender, resolver });
+      await that.pipeAndUpdateCallbacks({ appender, resolver });
     });
 
     return that;
@@ -364,7 +362,7 @@ export class AsyncAccumulator<
   public sort(sorter: Sorter<Output, Async>) {
     const that = recastAccumulator<Output, Throws, Async, Output>(this);
 
-    that.enqueueAction(() => {
+    that.enqueueAction(async () => {
       const data: Output[] = [];
 
       // Simple insertion sort performed as items are added
@@ -399,7 +397,7 @@ export class AsyncAccumulator<
       };
       const resolver = () => data;
 
-      that.pipeAndUpdateCallbacks({ appender, resolver });
+      await that.pipeAndUpdateCallbacks({ appender, resolver });
     });
 
     return that;
@@ -408,7 +406,7 @@ export class AsyncAccumulator<
   public filter(filterer: Filterer<Output, Async>) {
     const that = recastAccumulator<Output, Throws, Async, Output>(this);
 
-    that.enqueueAction(() => {
+    that.enqueueAction(async () => {
       const data: Output[] = [];
       let currentIndex = 0;
 
@@ -417,7 +415,7 @@ export class AsyncAccumulator<
       };
       const resolver = () => data;
 
-      that.pipeAndUpdateCallbacks({ appender, resolver });
+      await that.pipeAndUpdateCallbacks({ appender, resolver });
     });
 
     return that;
@@ -434,26 +432,27 @@ export class AsyncAccumulator<
     }
   }
 
+  private async appendAsync(data: Iterable<Datum>) {
+    const iterator = data[Symbol.iterator]();
+    const first = iterator.next();
+
+    if (first.done) return;
+
+    await this.appendFirstDatumAndHandleDefer(first.value);
+
+    for (let cur = iterator.next(); !cur.done; cur = iterator.next())
+      await this.appender(cur.value);
+  }
+
   public append(data: Iterable<Datum>) {
     if (this.error) return this;
 
-    this.enqueueAction(async () => {
-      const iterator = data[Symbol.iterator]();
-      const first = iterator.next();
-
-      if (first.done) return;
-
-      await this.appendFirstDatumAndHandleDefer(first.value);
-
-      for (let cur = iterator.next(); !cur.done; cur = iterator.next()) {
-        await this.appender(cur.value);
-      }
-    });
+    this.enqueueAction(() => this.appendAsync(data));
 
     return this;
   }
 
-  private async asyncResult() {
+  private async resultAsync() {
     await this.executeActionsBlocking();
     const result = await this.resolver();
     if (!this.throws && this.error)
@@ -463,8 +462,8 @@ export class AsyncAccumulator<
     return result;
   }
 
-  private async asyncToArray() {
-    const result = await this.asyncResult();
+  private async toArrayAsync() {
+    const result = await this.resultAsync();
     if (result instanceof Error) return result;
 
     // no-unsafe-any disagrees that this is redundant
@@ -473,10 +472,10 @@ export class AsyncAccumulator<
   }
 
   public result() {
-    return this.asyncResult() as AccumulatorResult<Throws, Async, Output>;
+    return this.resultAsync() as AccumulatorResult<Throws, Async, Output>;
   }
 
   public toArray() {
-    return this.asyncToArray() as ArrayResult<Throws, Async, Output>;
+    return this.toArrayAsync() as ArrayResult<Throws, Async, Output>;
   }
 }
