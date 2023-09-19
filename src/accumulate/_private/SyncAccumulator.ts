@@ -5,7 +5,6 @@ import {
   getSyncReduceFunctionsWithoutInitialValue,
 } from "./reduce";
 import {
-  AccumulatorIterator,
   AccumulatorResult,
   ArrayResult,
   Classifier,
@@ -390,7 +389,7 @@ export class SyncAccumulator<
     return [...this.resolver()] as ArrayResult<Throws, Async, Output>;
   }
 
-  /**
+  /*
    * This is a RESULT method and forms the end of the accumulator pipeline.
    *
    * If enableExceptions() has been called, this
@@ -400,13 +399,13 @@ export class SyncAccumulator<
    * If exceptions have not been enabled, this method does not meet the requirements of
    * the Iterable interface and can't be treated as iterable.
    */
-  [Symbol.iterator](): AccumulatorIterator<Throws, Async, Datum>;
+  // [Symbol.iterator](): AccumulatorIterator<Throws, Async, Datum>;
 
-  public [Symbol.iterator]() {
-    return this.resolver()[Symbol.iterator]() as AccumulatorIterator<
-      Throws,
-      Async,
-      Datum
-    >;
-  }
+  // public [Symbol.iterator]() {
+  //   return this.resolver()[Symbol.iterator]() as AccumulatorIterator<
+  //     Throws,
+  //     Async,
+  //     Datum
+  //   >;
+  // }
 }

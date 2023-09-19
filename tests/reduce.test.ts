@@ -8,16 +8,12 @@ describe("Error Handling", () => {
     const result = errorAccumulator.result();
 
     // @ts-expect-error Verify that if result could be an error, it will not be iterable
-    [...errorAccumulator];
-    // @ts-expect-error Verify that if result could be an error, it will not be iterable
     [...result];
 
     if (!(result instanceof Error)) [...result];
 
     const exceptionAccumulator = accumulate([] as number[]).enableExceptions();
     const exceptionResult = exceptionAccumulator.result();
-
-    [...exceptionAccumulator];
     [...exceptionResult];
   });
 
@@ -33,7 +29,8 @@ describe("Error Handling", () => {
     expect(() => [
       ...accumulate([] as number[])
         .enableExceptions()
-        .reduce((prev, cur) => prev + cur),
+        .reduce((prev, cur) => prev + cur)
+        .result(),
     ]).toThrow();
   });
 
@@ -89,7 +86,8 @@ describe("Accumulates 0 to 2 simple records", () => {
     const [numResult] = [
       ...accumulate([] as number[])
         .enableExceptions()
-        .reduce((prev, cur) => prev + cur, 77),
+        .reduce((prev, cur) => prev + cur, 77)
+        .result(),
     ];
     expect(numResult).toBe(77);
     expect(numResult).toEqual(
@@ -99,7 +97,8 @@ describe("Accumulates 0 to 2 simple records", () => {
     const [stringResult] = [
       ...accumulate([] as string[])
         .enableExceptions()
-        .reduce((prev, cur) => prev + cur, "abc"),
+        .reduce((prev, cur) => prev + cur, "abc")
+        .result(),
     ];
     expect(stringResult).toBe("abc");
     expect(stringResult).toEqual(
@@ -109,7 +108,8 @@ describe("Accumulates 0 to 2 simple records", () => {
     const [objResult] = [
       ...accumulate([] as { foo: string }[])
         .enableExceptions()
-        .reduce((prev, cur) => ({ foo: prev.foo + cur.foo }), { foo: "bar" }),
+        .reduce((prev, cur) => ({ foo: prev.foo + cur.foo }), { foo: "bar" })
+        .result(),
     ];
     expect(objResult.foo).toBe("bar");
     expect(objResult).toEqual(
@@ -124,7 +124,8 @@ describe("Accumulates 0 to 2 simple records", () => {
     const [numResult] = [
       ...accumulate([77])
         .enableExceptions()
-        .reduce((prev, cur) => prev + cur),
+        .reduce((prev, cur) => prev + cur)
+        .result(),
     ];
     expect(numResult).toBe(77);
     expect(numResult).toEqual([77].reduce((prev, cur) => prev + cur));
@@ -132,7 +133,8 @@ describe("Accumulates 0 to 2 simple records", () => {
     const [stringResult] = [
       ...accumulate(["abc"])
         .enableExceptions()
-        .reduce((prev, cur) => prev + cur),
+        .reduce((prev, cur) => prev + cur)
+        .result(),
     ];
     expect(stringResult).toBe("abc");
     expect(stringResult).toEqual(["abc"].reduce((prev, cur) => prev + cur));
@@ -140,7 +142,8 @@ describe("Accumulates 0 to 2 simple records", () => {
     const [objResult] = [
       ...accumulate([{ foo: "bar" }])
         .enableExceptions()
-        .reduce((prev, cur) => ({ foo: prev.foo + cur.foo })),
+        .reduce((prev, cur) => ({ foo: prev.foo + cur.foo }))
+        .result(),
     ];
     expect(objResult.foo).toBe("bar");
     expect(objResult).toEqual(
@@ -154,7 +157,8 @@ describe("Accumulates 0 to 2 simple records", () => {
     expect([
       ...accumulate([-100])
         .enableExceptions()
-        .reduce((sum, cur) => sum + cur, 120),
+        .reduce((sum, cur) => sum + cur, 120)
+        .result(),
     ]).toEqual([20]);
   });
 
@@ -162,13 +166,14 @@ describe("Accumulates 0 to 2 simple records", () => {
     expect([
       ...accumulate([5, 7])
         .enableExceptions()
-        .reduce((sum, cur) => sum + cur),
+        .reduce((sum, cur) => sum + cur)
+        .result(),
     ]).toEqual([12]);
   });
 
   it("Combines two objects", () => {
-    expect([
-      ...accumulate([
+    expect(
+      accumulate([
         { a: 100, b: 200, c: "abc" },
         { a: 5, b: 17, c: "zzz" },
       ])
@@ -177,15 +182,17 @@ describe("Accumulates 0 to 2 simple records", () => {
           a: acc.a + cur.a,
           b: acc.b + cur.b,
           c: acc.c + cur.c,
-        })),
-    ]).toEqual([{ a: 105, b: 217, c: "abczzz" }]);
+        }))
+        .toArray()
+    ).toEqual([{ a: 105, b: 217, c: "abczzz" }]);
   });
 
   it("Treats currentIndex the same as Array.reduce (1 item, no initialValue)", () => {
     const [result] = [
       ...accumulate([0])
         .enableExceptions()
-        .reduce((acc, cur, currentIndex) => currentIndex),
+        .reduce((acc, cur, currentIndex) => currentIndex)
+        .result(),
     ];
     expect(result).toEqual(
       [0].reduce((acc, cur, currentIndex) => currentIndex)
@@ -196,7 +203,8 @@ describe("Accumulates 0 to 2 simple records", () => {
     const [result] = [
       ...accumulate([5, 10])
         .enableExceptions()
-        .reduce((acc, cur, currentIndex) => currentIndex),
+        .reduce((acc, cur, currentIndex) => currentIndex)
+        .result(),
     ];
     expect(result).toEqual(
       [1, 2].reduce((acc, cur, currentIndex) => currentIndex)
@@ -207,7 +215,8 @@ describe("Accumulates 0 to 2 simple records", () => {
     const [result] = [
       ...accumulate([])
         .enableExceptions()
-        .reduce((acc, cur, currentIndex) => currentIndex, 99),
+        .reduce((acc, cur, currentIndex) => currentIndex, 99)
+        .result(),
     ];
     expect(result).toEqual(
       [].reduce((acc, cur, currentIndex) => currentIndex, 99)
@@ -218,7 +227,8 @@ describe("Accumulates 0 to 2 simple records", () => {
     const [result] = [
       ...accumulate([55])
         .enableExceptions()
-        .reduce((acc, cur, currentIndex) => currentIndex, 22),
+        .reduce((acc, cur, currentIndex) => currentIndex, 22)
+        .result(),
     ];
     expect(result).toEqual(
       [12].reduce((acc, cur, currentIndex) => currentIndex, 11)
@@ -229,7 +239,8 @@ describe("Accumulates 0 to 2 simple records", () => {
     const [result] = [
       ...accumulate([75, 11])
         .enableExceptions()
-        .reduce((acc, cur, currentIndex) => currentIndex, 13),
+        .reduce((acc, cur, currentIndex) => currentIndex, 13)
+        .result(),
     ];
     expect(result).toEqual(
       [8, 17].reduce((acc, cur, currentIndex) => currentIndex, 11)
@@ -242,7 +253,8 @@ describe("Reduces larger lists", () => {
     expect([
       ...accumulate([1, 2, 3, 4, 5])
         .enableExceptions()
-        .reduce((acc, cur) => acc + cur, 100),
+        .reduce((acc, cur) => acc + cur, 100)
+        .result(),
     ]).toEqual([115]);
   });
 
@@ -251,14 +263,16 @@ describe("Reduces larger lists", () => {
       ...accumulate([] as number[])
         .enableExceptions()
         .reduce((acc, cur) => acc + cur)
-        .append([1, 2, 3, 4, 5]),
+        .append([1, 2, 3, 4, 5])
+        .result(),
     ]).toEqual([15]);
 
     expect([
       ...accumulate([] as number[])
         .enableExceptions()
         .append([1, 2, 3, 4, 5])
-        .reduce((acc, cur) => acc + cur),
+        .reduce((acc, cur) => acc + cur)
+        .result(),
     ]).toEqual([15]);
 
     // expect([
@@ -293,8 +307,8 @@ describe("Reduces larger lists", () => {
   it("Reduces object data with an object initialValue", () => {
     const data = makeExampleData(100);
 
-    expect([
-      ...accumulate(data)
+    expect(
+      accumulate(data)
         .enableExceptions()
         .reduce(
           (acc, cur) => ({
@@ -305,8 +319,9 @@ describe("Reduces larger lists", () => {
             sumOfIndex: 0,
             countOfYellow: 0,
           }
-        ),
-    ]).toEqual([
+        )
+        .toArray()
+    ).toEqual([
       data.reduce(
         (acc, cur) => ({
           sumOfIndex: acc.sumOfIndex + cur.index,
@@ -337,7 +352,8 @@ describe("Reduces larger lists", () => {
             sumOfIndex: 0,
             countOfYellow: 0,
           }
-        ),
+        )
+        .result(),
     ]).toEqual([
       data.reduce(
         (acc, cur) => {

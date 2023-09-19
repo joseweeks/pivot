@@ -4,7 +4,7 @@
   "description": "Utilities for accumulating and pivoting data",
   "main": "build/index.js",
   "scripts": {
-    "build": "tsc .",
+    "build": "tsc",
     "test": "jest",
     "lint": "eslint .",
     "run-examples": "NODE_OPTIONS='--loader ts-node/esm' node ./examples/runExamples",

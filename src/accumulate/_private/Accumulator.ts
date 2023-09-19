@@ -15,6 +15,15 @@ export interface Accumulator<
   Async extends boolean,
   Output = Datum
 > {
+  /**
+   * If this method is not called, none of the accumulator methods will throw. If it is called, then
+   * exceptions may be thrown as follows:
+   *
+   * 1) For synchronous code, exceptions may be thrown by any method of the accumulator. In most
+   *    cases, this will happen at the time that the error was generated, halting further processing.
+   * 2) For async code, exceptions will be captured at the point of the error and only thrown once
+   *    a RESULT method is called.
+   */
   enableExceptions(): Accumulator<Datum, true, Async, Output>;
 
   /**

@@ -5,5 +5,10 @@ export type Classifier<
   Classification,
   Async extends boolean
 > = Async extends true
-  ? (datum: Datum) => Promise<ClassifierResult<Classification> | Error>
+  ? (
+      datum: Datum
+    ) =>
+      | ClassifierResult<Classification>
+      | Error
+      | Promise<ClassifierResult<Classification> | Error>
   : (datum: Datum) => ClassifierResult<Classification> | Error;
