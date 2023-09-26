@@ -1,5 +1,5 @@
-import { Accumulator } from "../Accumulator";
-import { PivotResult } from "../types/PivotResult";
+import type { Accumulator } from "../../Accumulator";
+import type { PivotResult } from "../../types/PivotResult";
 
 export async function getResolverAsync<
   Datum,

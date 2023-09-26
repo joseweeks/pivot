@@ -1,12 +1,12 @@
-import { Accumulator } from "../Accumulator";
-import { Classifier } from "../types/Classifier";
-import { appendAsync } from "./appendAsync";
-import { getResolverAsync } from "./getResolverAsync";
+import type { Accumulator } from "../../Accumulator";
+import type { Classifier } from "../../types/Classifier";
+import { append } from "./append";
+import { getResolver } from "./getResolver";
 
-export function getAsyncPivotFunctions<
+export function getSyncPivotFunctions<
   Datum,
   Throws extends boolean,
-  Async extends true,
+  Async extends false,
   ReduceOutput,
   Classification,
   ClassificationName extends string,
@@ -25,7 +25,7 @@ export function getAsyncPivotFunctions<
   const classifications = new Map<string, Classification>();
 
   const appender = (datum: Datum) =>
-    appendAsync(
+    append(
       datum,
       accumulators,
       classifications,
@@ -35,7 +35,7 @@ export function getAsyncPivotFunctions<
     );
 
   const resolver = () =>
-    getResolverAsync(
+    getResolver(
       accumulators,
       classifications,
       onError,

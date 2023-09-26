@@ -1,7 +1,7 @@
 import { describe, expect, it } from "@jest/globals";
 import { accumulateAsync } from "../src";
 import { makeExampleData } from "./util";
-import { sleep } from "../src/accumulate/_private";
+import { sleep } from "../src/_private";
 
 describe("Error Handling", () => {
   // We have to be careful here, because the reducer function will only be called when there

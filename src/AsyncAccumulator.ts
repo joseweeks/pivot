@@ -1,10 +1,11 @@
-import { Accumulator } from "./Accumulator";
-import { getAsyncPivotFunctions } from "./pivot";
+import type { Accumulator } from "./Accumulator";
 import {
+  getAsyncPivotFunctions,
   getAsyncReduceFunctionsWithInitialValue,
   getAsyncReduceFunctionsWithoutInitialValue,
-} from "./reduce";
-import {
+  sleep,
+} from "./_private";
+import type {
   AccumulatorResult,
   ArrayResult,
   Classifier,
@@ -14,7 +15,6 @@ import {
   Reducer,
   Sorter,
 } from "./types";
-import { sleep } from "./util";
 
 // We are currently re-casting the generic type parameters of "this" whenever
 // we receive updated type information from calls. This is in place of the
@@ -101,7 +101,7 @@ export class AsyncAccumulator<
    * throw when an error is generated. If not, the accumulator is guaranteed not
    * to throw (even if the callbacks passed in do throw). Instead, the accumulator will
    * return an Error object representing the error. This error object will be returned only
-   * on a call to one of the results-bearing methods such as result() and toArray().
+   * on a call to one of the RESULTS methods such as result() and toArray().
    *
    * A note on Error handling. If exceptions have not been enabled, the accumulator itself
    * can not be treated as an iterable value. The result() method's return value

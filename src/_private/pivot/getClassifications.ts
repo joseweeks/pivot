@@ -1,5 +1,5 @@
-import { ClassifierResult } from "../types/ClassifierResult";
-import { SpecifiedClassification } from "../types/SpecifiedClassification";
+import type { ClassifierResult } from "../../types/ClassifierResult";
+import type { SpecifiedClassification } from "../../types/SpecifiedClassification";
 
 export function getClassifications<Classification>(
   result: ClassifierResult<Classification>

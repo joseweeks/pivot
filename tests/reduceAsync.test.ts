@@ -1,7 +1,7 @@
 import { describe, expect, it } from "@jest/globals";
 import { accumulateAsync } from "../src";
 import { makeExampleData } from "./util";
-import { sleep } from "../src/accumulate/_private";
+import { sleep } from "../src/_private";
 
 async function sleepAndReturn<T>(val: T) {
   await sleep(10);

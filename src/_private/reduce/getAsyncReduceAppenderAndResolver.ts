@@ -1,5 +1,5 @@
 import { wrapError } from "../util/wrapError";
-import { Reducer } from "../types/Reducer";
+import type { Reducer } from "../../types/Reducer";
 
 export function getAsyncReduceAppenderAndResolver<
   Datum,

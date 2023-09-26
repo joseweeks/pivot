@@ -1,4 +1,4 @@
-import { Reducer } from "../types/Reducer";
+import type { Reducer } from "../../types/Reducer";
 import { getAsyncReduceAppenderAndResolver } from "./getAsyncReduceAppenderAndResolver";
 
 export function getAsyncReduceFunctionsWithInitialValue<

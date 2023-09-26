@@ -1,4 +1,4 @@
-import { Classifier } from "../types/Classifier";
+import type { Classifier } from "../../types/Classifier";
 import { wrapError } from "../util/wrapError";
 
 export function getClassifierResult<Datum, Classification, Async extends false>(

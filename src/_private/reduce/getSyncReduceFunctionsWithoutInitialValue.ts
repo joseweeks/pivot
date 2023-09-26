@@ -1,20 +1,20 @@
-import { Reducer } from "../types/Reducer";
-import { getAsyncReduceAppenderAndResolver } from "./getAsyncReduceAppenderAndResolver";
+import type { Reducer } from "../../types/Reducer";
+import { getSyncReduceAppenderAndResolver } from "./getSyncReduceAppenderAndResolver";
 
 /**
  * Datum and Output are required to be the same type. This is enforced in the
  * overloads in the Accumulator class.
  */
-export function getAsyncReduceFunctionsWithoutInitialValue<
+export function getSyncReduceFunctionsWithoutInitialValue<
   Datum,
   Output,
-  Async extends true
+  Async extends false
 >(reducer: Reducer<Datum, Output, Async>, onError: (err: Error) => void) {
   const defer = (datum: Datum) => {
     const currentValue =
       typeof datum === "object" ? Object.assign({}, datum) : datum;
     const currentIndex = 1;
-    return getAsyncReduceAppenderAndResolver(
+    return getSyncReduceAppenderAndResolver(
       reducer,
       currentValue as unknown as Output,
       currentIndex,

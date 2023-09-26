@@ -1,5 +1,5 @@
-import { Accumulator } from "../Accumulator";
-import { ClassifierResult } from "../types";
+import type { Accumulator } from "../../Accumulator";
+import type { ClassifierResult } from "../../types";
 import { getClassifications } from "./getClassifications";
 import { storeClassification } from "./storeClassification";
 

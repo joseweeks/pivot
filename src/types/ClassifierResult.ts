@@ -1,4 +1,4 @@
-import { SpecifiedClassification } from "./SpecifiedClassification";
+import type { SpecifiedClassification } from "./SpecifiedClassification";
 
 export type ClassifierResult<Classification> =
   | string

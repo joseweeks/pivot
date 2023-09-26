@@ -1,4 +1,4 @@
-import { ClassifierResult } from "./ClassifierResult";
+import type { ClassifierResult } from "./ClassifierResult";
 
 export type Classifier<
   Datum,
