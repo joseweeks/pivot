@@ -9,7 +9,7 @@
     "tsconfigRootDir": "."
   },
   "plugins": ["@typescript-eslint"],
-  "ignorePatterns": ["node_modules", "build"],
+  "ignorePatterns": ["node_modules", "build", "dist", "esbuild.cjs"],
   "rules": {
     "no-restricted-imports": [
       "error",
@@ -35,6 +35,13 @@
     {
       "files": ["**/index.ts"],
       "rules": { "no-restricted-imports": "off" }
+    },
+    {
+      "files": ["tests/**/*.ts"],
+      "parserOptions": {
+        "project": "tsconfig.test.json",
+        "tsconfigRootDir": "."
+      }
     }
   ]
 }

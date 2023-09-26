@@ -16,6 +16,6 @@
     "incremental": true,
     "outDir": "./build"
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx"],
-  "exclude": ["node_modules", "tests", "build", "dist"]
+  "include": ["tests/**/*.ts", "tests/**/*.tsx"],
+  "exclude": ["node_modules", "src", "build", "dist"]
 }
